@@ -86,6 +86,10 @@ const convertTimestampToUtcDateTime = (timestamp: number): string => {
   return `${formattedMonth}/${formattedDay}/${year} ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
 }
 
+const formatMySQLDateTime = (date: any) : string => {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 // This function references `providerRopsten` and `providerBscTest` which aren't defined in the provided code.
 // Make sure these are defined somewhere in your project or else this function will throw an error when called.
 // const waitForTransaction = async (transactionHash: string, netID: string): Promise<boolean> => {
@@ -149,5 +153,6 @@ export {
   convertDecimals,
   fillTemplate,
   convertTimestampToUtcDateTime,
-  containsUpperCase
+  containsUpperCase,
+  formatMySQLDateTime
 };
