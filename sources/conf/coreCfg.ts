@@ -36,3 +36,5 @@ export const PAGESIZE = 30
 // export const INMSG
 
 export const HTTPPORT = 3243
+
+export const GAME_SERVER_HOST = 'https://majyo.vip:8443/'

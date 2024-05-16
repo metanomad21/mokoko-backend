@@ -3,6 +3,7 @@ import w3utils from 'web3-utils';
 import path from 'path';
 import { ethers } from 'ethers';
 import axios, { AxiosResponse } from 'axios';
+import crypto from 'crypto'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -139,6 +140,12 @@ const containsUpperCase = (str: any) => {
   return /[A-Z]/.test(str);
 }
 
+const computeMD5Hash = (input: any) => {
+  const hash = crypto.createHash('md5');
+  hash.update(input);
+  return hash.digest('hex');
+}
+
 export {
   toBytes32,
   sortObjectKeys,
@@ -154,5 +161,6 @@ export {
   fillTemplate,
   convertTimestampToUtcDateTime,
   containsUpperCase,
-  formatMySQLDateTime
+  formatMySQLDateTime,
+  computeMD5Hash
 };
