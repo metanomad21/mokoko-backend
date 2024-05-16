@@ -67,7 +67,7 @@ const main = async () => {
                             signedData: signedStr,
                             originalData: signData
                         };
-                        axios.post('游戏服务器的URL', postData)
+                        // axios.post('游戏服务器的URL', postData)
                     }
                 }
             }
