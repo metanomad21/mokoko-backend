@@ -162,7 +162,7 @@ const signDataSha256 = (data: any, privateKey: any) => {
 
 function sortObjectAndStringify(data: any) {
   // 创建一个新对象，使用 Object.keys 排序后的键来构建
-  const sortedObject = {};
+  const sortedObject: any = {};
   Object.keys(data).sort().forEach(key => {
       sortedObject[key] = data[key];
   });
