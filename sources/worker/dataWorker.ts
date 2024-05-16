@@ -3,9 +3,11 @@ import express from 'express'
 import { request, gql } from 'graphql-request'
 import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
-import {formatMySQLDateTime, computeMD5Hash} from '../utils/common'
+import {formatMySQLDateTime, computeMD5Hash, signDataSha256} from '../utils/common'
 const app = express();
 app.use(express.json());
+
+const SHA256_PK = process.env.SHA256_PK
 
 const main = async () => {
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
@@ -36,6 +38,7 @@ const main = async () => {
                         out_msg_count
                         out_msg_body
                         end_status
+                        hash
                         }
                     }
                     `
@@ -43,7 +46,7 @@ const main = async () => {
                     let reqData: any = await request(DTON_ENDPOINT, query);
                     console.log("req data ... ", reqData)
 
-                    for(var i in reqData.transactions) {
+                    for(var t in reqData.transactions) {
                         //判定金额
     
                         //修改订单状态
@@ -53,6 +56,18 @@ const main = async () => {
                         WHERE orderid = ${resCheckOrder[i]['orderid']} AND status = 0;
                         `;
                         await db.query(sqlPayed)
+
+                        let signData = {
+                            address: resCheckOrder[i]['player_wallet'],
+                            prodId: resCheckOrder[i]['item_id'],
+                            txHash: reqData.transactions[t]['hash']
+                        }
+                        let signedStr = signDataSha256(signData, SHA256_PK)
+                        const postData = {
+                            signedData: signedStr,
+                            originalData: signData
+                        };
+                        axios.post('游戏服务器的URL', postData)
                     }
                 }
             }

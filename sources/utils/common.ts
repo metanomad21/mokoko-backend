@@ -146,6 +146,31 @@ const computeMD5Hash = (input: any) => {
   return hash.digest('hex');
 }
 
+const signDataSha256 = (data: any, privateKey: any) => {
+  const stringToSign = sortObjectAndStringify(data);
+  const signer = crypto.createSign('sha256');
+  signer.update(stringToSign);
+  signer.end();
+
+  // 使用提供的私钥字符串，这里假设 privateKey 是直接的密钥字符串
+  const signature = signer.sign({
+      key: privateKey,
+      padding: crypto.constants.RSA_PKCS1_PADDING
+  }, 'base64');
+  return signature;
+}
+
+function sortObjectAndStringify(data: any) {
+  // 创建一个新对象，使用 Object.keys 排序后的键来构建
+  const sortedObject = {};
+  Object.keys(data).sort().forEach(key => {
+      sortedObject[key] = data[key];
+  });
+
+  // 将排序后的对象转换为 JSON 字符串
+  return JSON.stringify(sortedObject);
+}
+
 export {
   toBytes32,
   sortObjectKeys,
@@ -162,5 +187,6 @@ export {
   convertTimestampToUtcDateTime,
   containsUpperCase,
   formatMySQLDateTime,
-  computeMD5Hash
+  computeMD5Hash,
+  signDataSha256
 };
