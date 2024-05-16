@@ -13,18 +13,17 @@ const main = async () => {
             
             //查询最近订单的时间
             let sqlCheckOrder = `select * from orders where status = 0 order by id desc`
-            let resCheckOrder = await db.query(sqlCheckOrder)
+            let resCheckOrder: any = await db.query(sqlCheckOrder)
             console.log("Check order ... ", resCheckOrder)
 
             if(resCheckOrder) {
                 //查询每一个未支付订单的链上数据
                 for(var i in resCheckOrder) {
-                    const inMsg = resCheckOrder[i]['orderid']
                     const query = gql`
                     query {
                         transactions(
-                            address_friendly: "${PAY_ADDRESS}"
-                            in_msg_comment: "${inMsg}"
+                            address_friendly: "${resCheckOrder[i]['to_wallet']}"
+                            in_msg_comment: "${resCheckOrder[i]['orderid']}"
                             end_status: "active"
                             page: ${page}
                             page_size: ${pageSize}
@@ -41,29 +40,30 @@ const main = async () => {
                     }
                     `
             
-                    let reqData = await request(DTON_ENDPOINT, query);
+                    let reqData: any = await request(DTON_ENDPOINT, query);
                     console.log("req data ... ", reqData)
 
-                    //判定金额
-
-                    //修改订单状态
-                    const sqlPayed = `
-                    UPDATE orders 
-                    SET status = 1
-                    WHERE orderid = ${resCheckOrder[i]['orderid']} AND status = 0;
-                    `;
-                    await db.query(sqlPayed)
+                    for(var i in reqData.transactions) {
+                        //判定金额
+    
+                        //修改订单状态
+                        const sqlPayed = `
+                        UPDATE orders 
+                        SET status = 1
+                        WHERE orderid = ${resCheckOrder[i]['orderid']} AND status = 0;
+                        `;
+                        await db.query(sqlPayed)
+                    }
                 }
             }
 
-            const now = new Date();
-            const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);  // 减去2小时
             //将超时未支付的订单置2
             const sqlStatus = `
             UPDATE orders 
             SET status = 2 
-            WHERE created_at <= '${formatMySQLDateTime(twoHoursAgo)}' AND status = 0;
+            WHERE created_at <= DATE_SUB(NOW(), INTERVAL 2 HOUR) AND status = 0;
             `;
+
             await db.query(sqlStatus)
         } catch (error) {
             console.error("Error fetching data from TheGraph", error);
