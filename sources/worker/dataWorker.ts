@@ -5,6 +5,16 @@ import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST} from '
 import db from '../utils/mysql-utils'
 import {formatMySQLDateTime, computeMD5Hash, signDataSha256} from '../utils/common'
 const app = express();
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*"); // 允许所有域名的访问
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // 允许的 HTTP 方法
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204); // 对于预检请求直接返回204 No Content
+    } else {
+      next();
+    }
+});
 app.use(express.json());
 
 const SHA256_PK = process.env.SHA256_PK
