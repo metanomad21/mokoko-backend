@@ -3,7 +3,7 @@
 ## API Name: Submit Transaction Data
 
 ### Request URL
-`https://game-server.com/api/submit-transaction`
+`https://gameserver-xxxxx/submit-payment`
 
 ### Request Method
 `POST`
