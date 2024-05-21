@@ -65,7 +65,7 @@ const main = async () => {
 
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
-                        // await db.query(sqlPayed)
+                        await db.query(sqlPayed)
 
                         console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
 
