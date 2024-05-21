@@ -160,16 +160,21 @@ const signDataSha256 = (data: any, privateKey: any) => {
   return signature;
 }
 
-function sortObjectAndStringify(data: any) {
-  // 创建一个新对象，使用 Object.keys 排序后的键来构建
-  const sortedObject: any = {};
-  Object.keys(data).sort().forEach(key => {
-      sortedObject[key] = data[key];
-  });
+const sortObjectAndStringify = (data: any) => {
+  // 创建一个新数组，用于存储排序并格式化后的键值对
+  const sortedKeyValuePairs = Object.keys(data)
+    .sort()  // 对键进行排序
+    .map(key => `${key}=${data[key]}`);  // 将每个键值对转换为`key=value`格式
 
-  // 将排序后的对象转换为 JSON 字符串
-  return JSON.stringify(sortedObject);
+  // 将键值对数组连接成一个字符串，每对之间用`#`分隔
+  return sortedKeyValuePairs.join('#');
 }
+
+const truncateDecimal = (num: any, precision: any) => {
+  const factor = Math.pow(10, precision);
+  return Math.floor(num * factor) / factor;
+}
+
 
 export {
   toBytes32,
@@ -188,5 +193,7 @@ export {
   containsUpperCase,
   formatMySQLDateTime,
   computeMD5Hash,
-  signDataSha256
+  signDataSha256,
+  truncateDecimal,
+  sortObjectAndStringify
 };

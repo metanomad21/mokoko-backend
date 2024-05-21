@@ -3,7 +3,8 @@ import express from 'express'
 import { request, gql } from 'graphql-request'
 import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
-import {formatMySQLDateTime, computeMD5Hash, signDataSha256} from '../utils/common'
+import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify} from '../utils/common'
+import { Address, Contract, Slice, beginCell, contractAddress, toNano, TonClient4, internal, fromNano, WalletContractV4 } from "@ton/ton";
 const app = express();
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*"); // 允许所有域名的访问
@@ -36,9 +37,6 @@ const main = async () => {
                         transactions(
                             address_friendly: "${resCheckOrder[i]['to_wallet']}"
                             in_msg_comment: "${resCheckOrder[i]['orderid']}"
-                            end_status: "active"
-                            page: ${page}
-                            page_size: ${pageSize}
                         ){
                         gen_utime
                         lt
@@ -49,12 +47,13 @@ const main = async () => {
                         out_msg_body
                         end_status
                         hash
+                        in_msg_value_grams
                         }
                     }
                     `
             
                     let reqData: any = await request(DTON_ENDPOINT, query);
-                    console.log("req data ... ", reqData)
+                    console.log("req data ... ", query, reqData)
 
                     for(var t in reqData.transactions) {
                         //判定金额
@@ -63,21 +62,40 @@ const main = async () => {
                         const sqlPayed = `
                         UPDATE orders 
                         SET status = 1
-                        WHERE orderid = ${resCheckOrder[i]['orderid']} AND status = 0;
+
+                        WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
-                        await db.query(sqlPayed)
+                        // await db.query(sqlPayed)
+
+                        console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
 
                         let signData = {
                             address: resCheckOrder[i]['player_wallet'],
                             prodId: resCheckOrder[i]['item_id'],
-                            txHash: reqData.transactions[t]['hash']
+                            txHash: reqData.transactions[t]['hash'],
+                            orderId: resCheckOrder[i]['orderid'],
+                            payAmount: toNano(truncateDecimal(resCheckOrder[i]['price_token'], 9).toString()).toString(),
+                            payToken: resCheckOrder[i]['pay_token']
                         }
                         let signedStr = signDataSha256(signData, SHA256_PK)
                         const postData = {
                             signedData: signedStr,
-                            originalData: signData
+                            originalData: sortObjectAndStringify(signData)
                         };
-                        // axios.post('游戏服务器的URL', postData)
+
+                        console.log("post data ... ", postData)
+
+                        let noticeRespo = await axios.post(GAME_SERVER_HOST+'FinishRecharge', postData)
+                        if (noticeRespo.data.code == 0) {
+                            const sqlSynced = `
+                            UPDATE orders 
+                            SET sync_game_at = NOW()
+                            WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 1 AND sync_game_at is null;
+                            `;
+                            await db.query(sqlSynced)
+                        }else{
+                            console.log("Notice error res... ", noticeRespo.data)
+                        }
                     }
                 }
             }
