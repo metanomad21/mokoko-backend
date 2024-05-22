@@ -38,6 +38,7 @@ const main = async () => {
                             address_friendly: "${resCheckOrder[i]['to_wallet']}"
                             in_msg_comment: "${resCheckOrder[i]['orderid']}"
                         ){
+                        address
                         gen_utime
                         lt
                         account_storage_balance_grams
@@ -56,46 +57,24 @@ const main = async () => {
                     console.log("req data ... ", query, reqData)
 
                     for(var t in reqData.transactions) {
-                        //判定金额
-    
+                        //判定金额 用account_storage_balance_grams
+
+                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.transactions[t].address.toString()), reqData.transactions[t].address)
+                        
+                        const genUtimeDate = new Date(reqData.transactions[t].gen_utime);
+                        const formattedDate = formatMySQLDateTime(genUtimeDate);
+
                         //修改订单状态
                         const sqlPayed = `
                         UPDATE orders 
-                        SET status = 1
-
+                        SET status = 1,
+                        payed_at = '${formattedDate}',
+                        payed_tx = '${reqData.transactions[t]['hash']}',
+                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
                         await db.query(sqlPayed)
-
                         console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
-
-                        let signData = {
-                            address: resCheckOrder[i]['player_wallet'],
-                            prodId: resCheckOrder[i]['item_id'],
-                            txHash: reqData.transactions[t]['hash'],
-                            orderId: resCheckOrder[i]['orderid'],
-                            payAmount: toNano(truncateDecimal(resCheckOrder[i]['price_token'], 9).toString()).toString(),
-                            payToken: resCheckOrder[i]['pay_token']
-                        }
-                        let signedStr = signDataSha256(signData, SHA256_PK)
-                        const postData = {
-                            signedData: signedStr,
-                            originalData: sortObjectAndStringify(signData)
-                        };
-
-                        console.log("post data ... ", postData)
-
-                        let noticeRespo = await axios.post(GAME_SERVER_HOST+'FinishRecharge', postData)
-                        if (noticeRespo.data.code == 0) {
-                            const sqlSynced = `
-                            UPDATE orders 
-                            SET sync_game_at = NOW()
-                            WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 1 AND sync_game_at is null;
-                            `;
-                            await db.query(sqlSynced)
-                        }else{
-                            console.log("Notice error res... ", noticeRespo.data)
-                        }
                     }
                 }
             }
@@ -118,7 +97,39 @@ const main = async () => {
     // 将数据发送到游戏业务服务器
     async function sendDataToBusinessServer() {
         try {
-            await axios.post('YOUR_BUSINESS_SERVER_ENDPOINT', {});
+            console.log("enter sendDataToBusinessServer/// ")
+            let orderSql= `select * from orders where status = 1 and sync_game_at is null`
+            let orderRes = await db.query(orderSql)
+            if(orderRes.length > 0) {
+                let signData = {
+                    address: orderRes[0]['player_wallet'],
+                    prodId: orderRes[0]['item_id'],
+                    txHash: orderRes[0]['payed_tx'],
+                    orderId: orderRes[0]['orderid'],
+                    payAmount: toNano(truncateDecimal(orderRes[0]['price_token'], 9).toString()).toString(),
+                    payToken: orderRes[0]['pay_token']
+                }
+                let signedStr = signDataSha256(signData, SHA256_PK)
+                const postData = {
+                    signedData: signedStr,
+                    originalData: sortObjectAndStringify(signData)
+                };
+    
+                console.log("post data ... ", postData)
+    
+                let noticeRespo = await axios.post(GAME_SERVER_HOST+'FinishRecharge', postData)
+                console.log("noticeRespo ... ", noticeRespo)
+                if(noticeRespo.status == 200) {
+                    const sqlSynced = `
+                    UPDATE orders 
+                    SET sync_game_at = NOW(),
+                    sync_status = '${noticeRespo.data.code}'
+                    WHERE orderid = '${orderRes[0]['orderid']}' AND status = 1 AND sync_game_at is null;
+                    `;
+                    await db.query(sqlSynced)
+                }
+            }
+            
         } catch (error) {
             console.error("Error sending data to business server", error);
         }
@@ -128,7 +139,7 @@ const main = async () => {
         // 设置计划任务，每隔一分钟执行一次
         await fetchPayData()
         setInterval(fetchPayData, 60000)
-        // setInterval(sendDataToBusinessServer, 10000)
+        setInterval(sendDataToBusinessServer, 10000)
     }
 
     main()
