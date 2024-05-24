@@ -137,9 +137,9 @@ const main = async () => {
 
     async function main() {
         // 设置计划任务，每隔一分钟执行一次
-        // await fetchPayData()
-        // setInterval(fetchPayData, 60000)
-        // setInterval(sendDataToBusinessServer, 10000)
+        await fetchPayData()
+        setInterval(fetchPayData, 60000)
+        setInterval(sendDataToBusinessServer, 10000)
     }
 
     main()
