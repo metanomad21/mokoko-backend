@@ -67,6 +67,7 @@ This document outlines the RESTful API endpoints for a service that provides fun
       "data": {
         "orderId": "order identifier",
         "itemId": "item identifier",
+        "gems": "gems amount",
         "priceUsd": "price in USD",
         "priceToken": "price in tokens",
         "expireTime": "expiration time in Unix timestamp"

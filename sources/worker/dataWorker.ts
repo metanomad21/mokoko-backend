@@ -222,6 +222,13 @@ const main = async () => {
                 returnData.data = {}
                 returnData.data['orderId'] = historyRes[0].orderid
                 returnData.data['itemId'] = historyRes[0].item_id
+                const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProdsDetail`, {
+                    prodId: historyRes[0].item_id
+                })
+                if(respoProdDetail.data.code == 0) {
+                    returnData.data['gems'] = respoProdDetail.data.data.gems
+                }
+
                 returnData.data['priceUsd'] = historyRes[0].price_usd
                 returnData.data['priceToken'] = historyRes[0].price_token
                 let unixTime = new Date(historyRes[0].created_at).getTime() / 1000
