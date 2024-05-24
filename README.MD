@@ -52,20 +52,58 @@ This document outlines the RESTful API endpoints for a service that provides fun
       "data": {}
     }
     ```
+### 4. Get History Order
 
-### 3. Get Orders by Address
-
-- **Endpoint**: `/orders/:address`
+- **Endpoint**: `/getHistoryOrder/:address`
 - **Method**: `GET`
 - **URL Parameters**:
-  - `address`: Wallet address to fetch orders for.
-- **Description**: Fetches a list of orders associated with a specific wallet address. This endpoint needs further implementation to return meaningful data.
+  - `address`: Wallet address of the player for whom to fetch history orders.
+- **Description**: Retrieves the most recent order details for a specific wallet address where the order status is active and related to game ID 1.
 - **Response**:
   - **200 OK**:
-    ```plaintext
-    Orders for address {address}
+    ```json
+    {
+      "errcode": 0,
+      "data": {
+        "orderId": "order identifier",
+        "itemId": "item identifier",
+        "priceUsd": "price in USD",
+        "priceToken": "price in tokens",
+        "expireTime": "expiration time in Unix timestamp"
+      }
+    }
     ```
-    (Note: This response is placeholder and should be replaced with actual data representation when implemented.)
+  - **200 OK** (No active order):
+    ```json
+    {
+      "errcode": 1,
+      "data": {}
+    }
+    ```
+
+### 5. Cancel Order
+
+- **Endpoint**: `/cancelOrder/:orderid`
+- **Method**: `POST`
+- **URL Parameters**:
+  - `orderid`: Unique identifier of the order to be cancelled.
+- **Description**: Cancels an active order (where status is 0 and game ID is 1) by changing its status to 2 (cancelled).
+- **Response**:
+  - **200 OK**:
+    ```json
+    {
+      "errcode": 0,
+      "data": {}
+    }
+    ```
+  - **200 OK** (Order not found or already processed):
+    ```json
+    {
+      "errcode": 1,
+      "data": {}
+    }
+    ```
+
 
 ## Notes
 

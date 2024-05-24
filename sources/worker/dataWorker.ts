@@ -137,9 +137,9 @@ const main = async () => {
 
     async function main() {
         // 设置计划任务，每隔一分钟执行一次
-        await fetchPayData()
-        setInterval(fetchPayData, 60000)
-        setInterval(sendDataToBusinessServer, 10000)
+        // await fetchPayData()
+        // setInterval(fetchPayData, 60000)
+        // setInterval(sendDataToBusinessServer, 10000)
     }
 
     main()
@@ -164,8 +164,17 @@ const main = async () => {
         try {
             const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProdsDetail`, {
                 prodId: prodId
-            });
+            })
             if(respoProdDetail.data.code == 0) {
+
+                //检查该地址有下单未支付记录吗
+                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1`
+                let checkUnpayRes = await db.query(checkUnpaySql) 
+                if(checkUnpayRes.length > 0) {
+                    returnData['errcode'] = 2
+                    throw(2)
+                }
+
                 const dataProd = respoProdDetail.data.data
                 const priceUsd = parseFloat(dataProd.price)/100
                 const priceTONRes: any = await _getTONPrice()
@@ -200,10 +209,54 @@ const main = async () => {
     });
 
     // Endpoint to get order list for a specific address
-    app.get('/orders/:address', (req, res) => {
+    app.get('/getHistoryOrder/:address', async (req, res) => {
         const { address } = req.params;
-        // Here, implement logic to fetch order details based on address
-        res.send(`Orders for address ${address}`);
+        let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
+
+        try {
+            let historySql = `select * from orders where player_wallet = '${address}' and status = 0 and game_id = 1`
+            console.log("historySql ... ", historySql)
+            let historyRes = await db.query(historySql) 
+
+            if(historyRes.length > 0) {
+                returnData.data = {}
+                returnData.data['orderId'] = historyRes[0].orderid
+                returnData.data['itemId'] = historyRes[0].item_id
+                returnData.data['priceUsd'] = historyRes[0].price_usd
+                returnData.data['priceToken'] = historyRes[0].price_token
+                let unixTime = new Date(historyRes[0].created_at).getTime() / 1000
+                unixTime += 2 * 3600
+                returnData.data['expireTime'] = unixTime
+                returnData['errcode'] = 0
+            }
+            res.send(returnData);
+        } catch (error) {
+            console.log("/historyOrder error ...", error)
+            res.send(returnData);
+        }   
+    });
+
+    app.post('/cancelOrder/:orderid', async (req, res) => {
+        const { orderid } = req.params;
+        let returnData = {errcode: 1, data: {}}
+
+        try {
+            let historySql = `select * from orders where orderid = '${orderid}' and status = 0 and game_id = 1`
+            let historyRes = await db.query(historySql) 
+
+            if(historyRes.length > 0) {
+                const sqlCancel = `
+                    UPDATE orders 
+                    SET status = 2
+                    WHERE orderid = '${orderid}' AND status = 0 AND game_id = 1;`;
+                await db.query(sqlCancel)
+                returnData['errcode'] = 0
+            }
+            res.send(returnData);
+        } catch (error) {
+            console.log("/cancelOrder error ...", error)
+            res.send(returnData);
+        }   
     });
 
     app.listen(HTTPPORT, () => {
