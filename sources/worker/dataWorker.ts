@@ -168,7 +168,7 @@ const main = async () => {
             if(respoProdDetail.data.code == 0) {
 
                 //检查该地址有下单未支付记录吗
-                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1`
+                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0`
                 let checkUnpayRes = await db.query(checkUnpaySql) 
                 if(checkUnpayRes.length > 0) {
                     returnData['errcode'] = 2
@@ -184,8 +184,8 @@ const main = async () => {
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
                 const sqlInsert = `
-                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet)
-                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${PAY_ADDRESS}');
+                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay)
+                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${PAY_ADDRESS}', 0);
                 `;
                 console.log("inert sql /// ", sqlInsert)
                 await db.query(sqlInsert)
@@ -214,7 +214,7 @@ const main = async () => {
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
-            let historySql = `select * from orders where player_wallet = '${address}' and status = 0 and game_id = 1`
+            let historySql = `select * from orders where player_wallet = '${address}' and pre_pay = 0 and status = 0 and game_id = 1`
             console.log("historySql ... ", historySql)
             let historyRes = await db.query(historySql) 
 
@@ -240,6 +240,29 @@ const main = async () => {
             res.send(returnData);
         } catch (error) {
             console.log("/historyOrder error ...", error)
+            res.send(returnData);
+        }   
+    });
+
+    app.post('/submitPayment/:orderid', async (req, res) => {
+        const { orderid } = req.params;
+        let returnData = {errcode: 1, data: {}}
+
+        try {
+            let historySql = `select * from orders where orderid = '${orderid}' and pre_pay = 0 and status = 0 and game_id = 1`
+            let historyRes = await db.query(historySql) 
+
+            if(historyRes.length > 0) {
+                const sqlCancel = `
+                    UPDATE orders 
+                    SET pre_pay = 1
+                    WHERE orderid = '${orderid}' AND pre_pay = 0 AND status = 0 AND game_id = 1;`;
+                await db.query(sqlCancel)
+                returnData['errcode'] = 0
+            }
+            res.send(returnData);
+        } catch (error) {
+            console.log("/cancelOrder error ...", error)
             res.send(returnData);
         }   
     });
