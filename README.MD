@@ -105,6 +105,30 @@ This document outlines the RESTful API endpoints for a service that provides fun
     }
     ```
 
+### 6. Submit Payment
+
+- **Endpoint**: `/submitPayment/:orderid`
+- **Method**: `POST`
+- **URL Parameters**:
+  - `orderid`: Unique identifier of the order for which payment is being submitted.
+- **Description**: Marks an order as pre-paid if it hasn't been paid for yet, and if it is still in an active status (status = 0) and belongs to game ID 1. This operation only affects orders that have not been previously marked as pre-paid.
+- **Response**:
+  - **200 OK** (Payment marked):
+    ```json
+    {
+      "errcode": 0,
+      "data": {}
+    }
+    ```
+  - **200 OK** (No payment marked):
+    ```json
+    {
+      "errcode": 1,
+      "data": {}
+    }
+    ```
+
+
 
 ## Notes
 
