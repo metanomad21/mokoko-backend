@@ -234,6 +234,7 @@ const main = async () => {
                 let unixTime = new Date(historyRes[0].created_at).getTime() / 1000
                 unixTime += 2 * 3600
                 returnData.data['expireTime'] = unixTime
+                returnData.data['payAddress'] = historyRes[0].to_wallet
                 returnData['errcode'] = 0
             }
             res.send(returnData);
