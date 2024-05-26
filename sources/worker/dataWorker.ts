@@ -294,7 +294,7 @@ const main = async () => {
     app.get('/getProd', async (req, res) => {
         const userId = parseInt(req.query.userId as string) || null;
         const address = req.query.address as string || null;
-        let returnData: { errcode: number, data: { [key: string]: any } } = {errcode: 1, data: {}}
+        let returnData: { errcode: number, data: any[] } = {errcode: 1, data: []}
 
         if(userId != null && address != null) {
             //向服务器请求prod列表
@@ -312,14 +312,14 @@ const main = async () => {
                             if(parseInt(respoProdDetail.data.data[p].times) - 1 == 0) {
                                 isSkip = 1
                                 break
-                            }else{
+                            } else {
                                 respoProdDetail.data.data[p].times --;
                             }
                         }
                     }
     
                     if(!isSkip) {
-                        returnData.data[p] = respoProdDetail.data.data[p]
+                        returnData.data.push(respoProdDetail.data.data[p])
                     }
                 }
                 returnData['errcode'] = 0
