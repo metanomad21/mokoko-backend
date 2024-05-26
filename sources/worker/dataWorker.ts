@@ -296,37 +296,63 @@ const main = async () => {
         const address = req.query.address as string || null;
         let returnData: { errcode: number, data: any[] } = {errcode: 1, data: []}
 
-        if(userId != null && address != null) {
-            //向服务器请求prod列表
-            const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProds`, {
-                userId: userId
-            })
-            if(respoProdDetail.data.code == 0) {
-                let checkOrderSql = `select * from orders where player_wallet = '${address}' and pre_pay = 1 and status = 0`
-                let checkOrderRes = await db.query(checkOrderSql)
-                // console.log("checkOrderRes .. ", checkOrderSql, checkOrderRes)
-                for(var p in respoProdDetail.data.data) {
-                    let isSkip = 0
-                    for(var o in checkOrderRes) {
-                        if(checkOrderRes[o].item_id.toString() == respoProdDetail.data.data[p].prodId.toString()) {
-                            if(parseInt(respoProdDetail.data.data[p].times) - 1 == 0) {
-                                isSkip = 1
-                                break
-                            } else {
-                                respoProdDetail.data.data[p].times --;
+        try {
+            if(userId != null && address != null) {
+                //向服务器请求prod列表
+                const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProds`, {
+                    userId: userId
+                })
+                if(respoProdDetail.data.code == 0) {
+                    let checkOrderSql = `select * from orders where player_wallet = '${address}' and pre_pay = 1 and status = 0`
+                    let checkOrderRes = await db.query(checkOrderSql)
+                    // console.log("checkOrderRes .. ", checkOrderSql, checkOrderRes)
+                    for(var p in respoProdDetail.data.data) {
+                        let isSkip = 0
+                        for(var o in checkOrderRes) {
+                            if(checkOrderRes[o].item_id.toString() == respoProdDetail.data.data[p].prodId.toString()) {
+                                if(parseInt(respoProdDetail.data.data[p].times) - 1 == 0) {
+                                    isSkip = 1
+                                    break
+                                } else {
+                                    respoProdDetail.data.data[p].times --;
+                                }
                             }
                         }
+        
+                        if(!isSkip) {
+                            returnData.data.push(respoProdDetail.data.data[p])
+                        }
                     }
-    
-                    if(!isSkip) {
-                        returnData.data.push(respoProdDetail.data.data[p])
-                    }
+                    returnData['errcode'] = 0
                 }
-                returnData['errcode'] = 0
             }
-        }
-        res.send(returnData)
+            res.send(returnData)
+        } catch (error) {
+            console.log("/getProds error ...", error)
+            res.send(returnData);
+        }   
     }); 
+
+    app.get('/getOrder/:orderid', async (req, res) => {
+        const { orderid } = req.params;
+        let returnData: { errcode: number, data: any[] } = {errcode: 1, data: []}
+
+        try{
+            let orderSql = `select * from orders where orderid = '${orderid}'`
+            console.log("orderSql ... ", orderSql)
+            let orderRes = await db.query(orderSql)
+            
+            if(orderRes.length > 0) {
+                returnData['errcode'] = 0
+                returnData['data'] = orderRes[0]
+            }
+            res.send(returnData)
+
+        } catch (error) {
+            console.log("/getOrder error ...", error)
+            res.send(returnData);
+        }   
+    })
 
     app.listen(HTTPPORT, () => {
         console.log(`HTTP Server running on port ${HTTPPORT}`);

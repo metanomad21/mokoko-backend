@@ -165,6 +165,47 @@ This document outlines the RESTful API endpoints for a service that provides fun
     ```
 
 
+### 8. Get Order
+
+- **Endpoint**: `/getOrder/:orderid`
+- **Method**: `GET`
+- **URL Parameters**:
+  - `orderid`: order id
+- **Description**: get order info
+- **Response**:
+  - **200 OK**:
+    ```json
+    {
+      "errcode": 0,
+      "data": {
+        "id": 55,
+        "orderid": "1-10001-c4bc931a30b5697a1535ba32b129b9ba",
+        "player_wallet": "UQC_b2HJy4r3-PXAcxRVZ5t0EzUjXNx0Jin_JlNLufwBzNWb",
+        "game_id": 1,
+        "item_id": 10001,
+        "price_usd": 199,
+        "price_token": "0.26819407008086255",
+        "pay_token": "TON",
+        "status": 2,
+        "created_at": "2024-05-25T02:47:57.000Z",
+        "payed_at": null,
+        "payed_tx": null,
+        "from_wallet": null,
+        "to_wallet": "UQAMclYF4e51025kBpyfZ24TL0jKVJ9ZTRkAw8EA2m0gZ4MI",
+        "sync_game_at": null,
+        "sync_status": null,
+        "pre_pay": 1
+      }
+    }
+    ```
+  - **200 OK** (No order):
+    ```json
+    {
+      "errcode": 1,
+      "data": {}
+    }
+    ```
+
 
 ## Notes
 
