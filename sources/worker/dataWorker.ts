@@ -290,6 +290,44 @@ const main = async () => {
         }   
     });
 
+    // Endpoint to get order list for a specific address
+    app.get('/getProd', async (req, res) => {
+        const userId = parseInt(req.query.userId as string) || null;
+        const address = req.query.address as string || null;
+        let returnData: { errcode: number, data: { [key: string]: any } } = {errcode: 1, data: {}}
+
+        if(userId != null && address != null) {
+            //向服务器请求prod列表
+            const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProds`, {
+                userId: userId
+            })
+            if(respoProdDetail.data.code == 0) {
+                let checkOrderSql = `select * from orders where player_wallet = '${address}' and pre_pay = 1 and status = 0`
+                let checkOrderRes = await db.query(checkOrderSql)
+                // console.log("checkOrderRes .. ", checkOrderSql, checkOrderRes)
+                for(var p in respoProdDetail.data.data) {
+                    let isSkip = 0
+                    for(var o in checkOrderRes) {
+                        if(checkOrderRes[o].item_id.toString() == respoProdDetail.data.data[p].prodId.toString()) {
+                            if(parseInt(respoProdDetail.data.data[p].times) - 1 == 0) {
+                                isSkip = 1
+                                break
+                            }else{
+                                respoProdDetail.data.data[p].times --;
+                            }
+                        }
+                    }
+    
+                    if(!isSkip) {
+                        returnData.data[p] = respoProdDetail.data.data[p]
+                    }
+                }
+                returnData['errcode'] = 0
+            }
+        }
+        res.send(returnData)
+    }); 
+
     app.listen(HTTPPORT, () => {
         console.log(`HTTP Server running on port ${HTTPPORT}`);
     });

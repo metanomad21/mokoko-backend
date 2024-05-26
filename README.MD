@@ -129,6 +129,39 @@ This document outlines the RESTful API endpoints for a service that provides fun
     ```
 
 
+### 7. Get Prod List
+
+- **Endpoint**: `/getProd`
+- **Method**: `GET`
+- **URL Parameters**:
+  - `userId`: user id from game server
+  - `address`: Wallet address of the player 
+- **Description**: get player products list
+- **Response**:
+  - **200 OK**:
+    ```json
+    {
+      "errcode": 0,
+      "data": {
+        "price": 199, // 价格，前端显⽰时需要除以100，保留两位⼩数，即 $1.99
+        "gems": 1200, // 钻⽯数量
+        "prodId": 10001, // 商品ID，游戏后端保存的ID
+        "prodType": 1, // 商品类型，⽬前均为1，即 Gems
+        "times": 1, // 可以购买的次数，该字段为后端业务⽤，前端⾃⾏判断是否需合约内
+        "imgId": 1000, // ⽤于 显⽰的图⽚资源ID，前端显⽰图⽚格式为：1000.png
+        "double": "Super Double +400%" // 该字段不为空时，显⽰在左上⻆促销信息
+      }
+    }
+    ```
+  - **200 OK** (No prod):
+    ```json
+    {
+      "errcode": 1,
+      "data": {}
+    }
+    ```
+
+
 
 ## Notes
 
