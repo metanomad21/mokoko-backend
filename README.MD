@@ -131,7 +131,7 @@ This document outlines the RESTful API endpoints for a service that provides fun
 
 ### 7. Get Prod List
 
-- **Endpoint**: `/getProd`
+- **Endpoint**: `/getProds`
 - **Method**: `GET`
 - **URL Parameters**:
   - `userId`: user id from game server

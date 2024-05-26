@@ -291,7 +291,7 @@ const main = async () => {
     });
 
     // Endpoint to get order list for a specific address
-    app.get('/getProd', async (req, res) => {
+    app.get('/getProds', async (req, res) => {
         const userId = parseInt(req.query.userId as string) || null;
         const address = req.query.address as string || null;
         let returnData: { errcode: number, data: any[] } = {errcode: 1, data: []}
