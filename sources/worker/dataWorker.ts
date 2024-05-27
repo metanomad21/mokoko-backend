@@ -234,6 +234,7 @@ const main = async () => {
                 let unixTime = new Date(historyRes[0].created_at).getTime() / 1000
                 unixTime += 2 * 3600
                 returnData.data['expireTime'] = unixTime
+                returnData.data['createdAt'] = historyRes[0].created_at
                 returnData.data['payAddress'] = historyRes[0].to_wallet
                 returnData.data['status'] = historyRes[0].status
                 returnData.data['prePay'] = historyRes[0].pre_pay
