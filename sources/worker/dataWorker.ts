@@ -214,7 +214,7 @@ const main = async () => {
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
-            let historySql = `select * from orders where player_wallet = '${address}' and pre_pay = 0 and status = 0 and game_id = 1`
+            let historySql = `select * from orders where player_wallet = '${address}' and status != 2 and game_id = 1`
             console.log("historySql ... ", historySql)
             let historyRes = await db.query(historySql) 
 
@@ -235,6 +235,8 @@ const main = async () => {
                 unixTime += 2 * 3600
                 returnData.data['expireTime'] = unixTime
                 returnData.data['payAddress'] = historyRes[0].to_wallet
+                returnData.data['status'] = historyRes[0].status
+                returnData.data['prePay'] = historyRes[0].pre_pay
                 returnData['errcode'] = 0
             }
             res.send(returnData);
