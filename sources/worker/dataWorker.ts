@@ -209,12 +209,12 @@ const main = async () => {
     });
 
     // Endpoint to get order list for a specific address
-    app.get('/getHistoryOrder/:address', async (req, res) => {
-        const { address } = req.params;
+    app.get('/getHistoryOrder', async (req, res) => {
+        const address = req.query.address as string || null;
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
-            let historySql = `select * from orders where player_wallet = '${address}' and status != 2 and game_id = 1 order by id desc`
+            let historySql = `select * from orders where player_wallet = '${address}' and game_id = 1 order by id desc`
             console.log("historySql ... ", historySql)
             let historyRes = await db.query(historySql) 
 
