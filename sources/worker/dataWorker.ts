@@ -209,8 +209,8 @@ const main = async () => {
     });
 
     // Endpoint to get order list for a specific address
-    app.get('/getHistoryOrder', async (req, res) => {
-        const address = req.query.address as string || null;
+    app.get('/getHistoryOrder/:address', async (req, res) => {
+        const { address } = req.params;
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
