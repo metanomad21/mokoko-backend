@@ -214,7 +214,7 @@ const main = async () => {
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
-            let historySql = `select * from orders where player_wallet = '${address}' and status != 2 and game_id = 1`
+            let historySql = `select * from orders where player_wallet = '${address}' and status != 2 and game_id = 1 order by id desc`
             console.log("historySql ... ", historySql)
             let historyRes = await db.query(historySql) 
 
