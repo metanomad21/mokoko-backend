@@ -1,7 +1,7 @@
 import axios from 'axios'
 import express from 'express'
 import { request, gql } from 'graphql-request'
-import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST} from '../conf/coreCfg'
+import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
 import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify} from '../utils/common'
 import { Address, Contract, Slice, beginCell, contractAddress, toNano, TonClient4, internal, fromNano, WalletContractV4 } from "@ton/ton";
@@ -19,6 +19,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 const SHA256_PK = process.env.SHA256_PK
+const IS_DEV: Number = Number(process.env.IS_DEV) ?? 0
+const gameServerHost = IS_DEV == 1?TEST_GAME_SERVER_HOST:GAME_SERVER_HOST
 
 const main = async () => {
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
@@ -117,7 +119,7 @@ const main = async () => {
     
                 console.log("post data ... ", postData)
     
-                let noticeRespo = await axios.post(GAME_SERVER_HOST+'FinishRecharge', postData)
+                let noticeRespo = await axios.post(gameServerHost+'FinishRecharge', postData)
                 console.log("noticeRespo ... ", noticeRespo)
                 if(noticeRespo.status == 200) {
                     const sqlSynced = `
@@ -162,7 +164,7 @@ const main = async () => {
         console.log(`Order received for item ${prodId}:`, req.body);
 
         try {
-            const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProdsDetail`, {
+            const respoProdDetail: any = await axios.post(`${gameServerHost}GetProdsDetail`, {
                 prodId: prodId
             })
             if(respoProdDetail.data.code == 0) {
@@ -222,7 +224,7 @@ const main = async () => {
                 returnData.data = {}
                 returnData.data['orderId'] = historyRes[0].orderid
                 returnData.data['itemId'] = historyRes[0].item_id
-                const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProdsDetail`, {
+                const respoProdDetail: any = await axios.post(`${gameServerHost}GetProdsDetail`, {
                     prodId: historyRes[0].item_id
                 })
                 if(respoProdDetail.data.code == 0) {
@@ -275,7 +277,7 @@ const main = async () => {
         let returnData = {errcode: 1, data: {}}
 
         try {
-            let historySql = `select * from orders where orderid = '${orderid}' and status = 0 and game_id = 1`
+            let historySql = `select * from orders where orderid = '${orderid}' and status = 0 and pre_pay != 1 and game_id = 1`
             let historyRes = await db.query(historySql) 
 
             if(historyRes.length > 0) {
@@ -302,7 +304,7 @@ const main = async () => {
         try {
             if(userId != null && address != null) {
                 //向服务器请求prod列表
-                const respoProdDetail: any = await axios.post(`${GAME_SERVER_HOST}GetProds`, {
+                const respoProdDetail: any = await axios.post(`${gameServerHost}GetProds`, {
                     userId: userId
                 })
                 if(respoProdDetail.data.code == 0) {
