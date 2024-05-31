@@ -1,7 +1,7 @@
 import axios from 'axios'
 import express from 'express'
 import { request, gql } from 'graphql-request'
-import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST} from '../conf/coreCfg'
+import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST, PAY_ADDRESS_TEST} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
 import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify} from '../utils/common'
 import { Address, Contract, Slice, beginCell, contractAddress, toNano, TonClient4, internal, fromNano, WalletContractV4 } from "@ton/ton";
@@ -21,6 +21,7 @@ app.use(express.json());
 const SHA256_PK = process.env.SHA256_PK
 const IS_DEV: Number = Number(process.env.IS_DEV) ?? 0
 const gameServerHost = IS_DEV == 1?TEST_GAME_SERVER_HOST:GAME_SERVER_HOST
+const payWallet = IS_DEV == 1?PAY_ADDRESS_TEST:PAY_ADDRESS
 
 const main = async () => {
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
@@ -60,21 +61,27 @@ const main = async () => {
 
                     for(var t in reqData.transactions) {
                         //判定金额 用account_storage_balance_grams
+                        let msgVal = reqData.transactions[i].in_msg_value_grams
+                        let newStatus = 1
+                        if(parseFloat(fromNano(msgVal).toString()) < (Math.floor(resCheckOrder[i].price_token * 100000) / 100000)) {
+                            newStatus = 3
+                        }
 
                         // console.log("from address ... ", Address.parseRaw("0:"+reqData.transactions[t].address.toString()), reqData.transactions[t].address)
-                        
                         const genUtimeDate = new Date(reqData.transactions[t].gen_utime);
                         const formattedDate = formatMySQLDateTime(genUtimeDate);
 
                         //修改订单状态
                         const sqlPayed = `
                         UPDATE orders 
-                        SET status = 1,
+                        SET status = '${newStatus}',
                         payed_at = '${formattedDate}',
                         payed_tx = '${reqData.transactions[t]['hash']}',
-                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}'
+                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}',
+                        msg_value = '${msgVal}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
+                        console.log("sqlPayed ... ", sqlPayed)
                         await db.query(sqlPayed)
                         console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
                     }
@@ -141,7 +148,7 @@ const main = async () => {
         // 设置计划任务，每隔一分钟执行一次
         await fetchPayData()
         setInterval(fetchPayData, 60000)
-        setInterval(sendDataToBusinessServer, 10000)
+        // setInterval(sendDataToBusinessServer, 10000)
     }
 
     main()
@@ -187,7 +194,7 @@ const main = async () => {
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
                 const sqlInsert = `
                 INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay)
-                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${PAY_ADDRESS}', 0);
+                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${payWallet}', 0);
                 `;
                 console.log("inert sql /// ", sqlInsert)
                 await db.query(sqlInsert)
@@ -198,7 +205,7 @@ const main = async () => {
                     "gameId": gameId,
                     "prodId": prodId,
                     "payToken": "TON",
-                    "payAddress": PAY_ADDRESS
+                    "payAddress": payWallet
                 }
                 returnData['errcode'] = 0
             }

@@ -31,7 +31,8 @@ export const TONCONSOLE_API_HOST = "https://tonapi.io/"
 export const REDIS_VERSION = "1.0.3"
 
 export const DTON_ENDPOINT = 'https://dton.io/graphql/'
-export const PAY_ADDRESS = 'UQAMclYF4e51025kBpyfZ24TL0jKVJ9ZTRkAw8EA2m0gZ4MI'
+export const PAY_ADDRESS = 'UQCHUTC3WhTSg3fQYlAFApX_aHMfZh9_o-GYZHYdOclXrVlg'
+export const PAY_ADDRESS_TEST = 'UQAMclYF4e51025kBpyfZ24TL0jKVJ9ZTRkAw8EA2m0gZ4MI'
 export const PAGESIZE = 30
 // export const INMSG
 
