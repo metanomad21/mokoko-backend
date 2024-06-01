@@ -22,6 +22,7 @@ const SHA256_PK = process.env.SHA256_PK
 const IS_DEV: Number = Number(process.env.IS_DEV) ?? 0
 const gameServerHost = IS_DEV == 1?TEST_GAME_SERVER_HOST:GAME_SERVER_HOST
 const payWallet = IS_DEV == 1?PAY_ADDRESS_TEST:PAY_ADDRESS
+let currentTonPrice: any
 
 const main = async () => {
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
@@ -84,6 +85,8 @@ const main = async () => {
                         // console.log("sqlPayed ... ", sqlPayed)
                         await db.query(sqlPayed)
                         console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
+
+                        await sendDataToBusinessServer()
                     }
                 }
             }
@@ -132,7 +135,8 @@ const main = async () => {
                     const sqlSynced = `
                     UPDATE orders 
                     SET sync_game_at = NOW(),
-                    sync_status = '${noticeRespo.data.code}'
+                    sync_status = '${noticeRespo.data.code}',
+                    balance = '${noticeRespo.data.data}'
                     WHERE orderid = '${orderRes[0]['orderid']}' AND status = 1 AND sync_game_at is null;
                     `;
                     await db.query(sqlSynced)
@@ -149,6 +153,10 @@ const main = async () => {
         await fetchPayData()
         setInterval(fetchPayData, 60000)
         setInterval(sendDataToBusinessServer, 10000)
+
+        //1小时更新一次ton price
+        await _getTONPrice()
+        setInterval(_getTONPrice, 3600000)
     }
 
     main()
@@ -193,8 +201,8 @@ const main = async () => {
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
                 const sqlInsert = `
-                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay)
-                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${payWallet}', 0);
+                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price)
+                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}');
                 `;
                 console.log("inert sql /// ", sqlInsert)
                 await db.query(sqlInsert)
@@ -246,7 +254,9 @@ const main = async () => {
                 returnData.data['createdAt'] = unixTimeC
                 returnData.data['payAddress'] = historyRes[0].to_wallet
                 returnData.data['status'] = historyRes[0].status
+                returnData.data['balance'] = historyRes[0].balance
                 returnData.data['prePay'] = historyRes[0].pre_pay
+                returnData.data['syncGameAt'] = historyRes[0].sync_game_at
                 returnData['errcode'] = 0
             }
             res.send(returnData);
@@ -379,14 +389,23 @@ const main = async () => {
     }
     */
     async function _getTONPrice() {
-        let config = {
-            method: 'get',
-            maxBodyLength: Infinity,
-            url: 'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd'
-        };
-        let priceRes = await axios.request(config)
-        console.log("_getTONPrice ... ", priceRes.data)
-        return priceRes.data
+
+        try {
+            let config = {
+                method: 'get',
+                maxBodyLength: Infinity,
+                url: 'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd'
+            };
+            let priceRes = await axios.request(config)
+            console.log("_getTONPrice ... ", priceRes.data)
+            currentTonPrice = priceRes.data
+            return priceRes.data
+
+        }catch(e) {
+            if(currentTonPrice) {
+                return currentTonPrice
+            }
+        }
     }
 }
 
