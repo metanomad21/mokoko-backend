@@ -386,7 +386,7 @@ const main = async () => {
         };
         let priceRes = await axios.request(config)
         console.log("_getTONPrice ... ", priceRes.data)
-        return priceRes.data
+        return priceRes.data.price
     }
 }
 
