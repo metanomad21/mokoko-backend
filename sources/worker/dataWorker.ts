@@ -188,7 +188,7 @@ const main = async () => {
                 const priceUsd = parseFloat(dataProd.price)/100
                 const priceTONRes: any = await _getTONPrice()
                 const priceTON = parseFloat(priceTONRes['the-open-network']['usd'])
-                const priceToken = priceUsd / priceTON
+                const priceToken = truncateDecimal(priceUsd / priceTON, 9)
                 const gameId = 1
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
