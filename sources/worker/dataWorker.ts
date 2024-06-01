@@ -3,7 +3,7 @@ import express from 'express'
 import { request, gql } from 'graphql-request'
 import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST, PAY_ADDRESS_TEST} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
-import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify} from '../utils/common'
+import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify, convertToUnixTimestamp} from '../utils/common'
 import { Address, Contract, Slice, beginCell, contractAddress, toNano, TonClient4, internal, fromNano, WalletContractV4 } from "@ton/ton";
 const app = express();
 app.use((req, res, next) => {
@@ -81,7 +81,7 @@ const main = async () => {
                         msg_value = '${msgVal}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
-                        console.log("sqlPayed ... ", sqlPayed)
+                        // console.log("sqlPayed ... ", sqlPayed)
                         await db.query(sqlPayed)
                         console.log("UIUIUUU ... ", resCheckOrder[i]['price_token'], truncateDecimal(resCheckOrder[i]['price_token'], 9).toString(), toNano("0.13342318"))
                     }
@@ -240,10 +240,10 @@ const main = async () => {
 
                 returnData.data['priceUsd'] = historyRes[0].price_usd
                 returnData.data['priceToken'] = historyRes[0].price_token
-                let unixTime = new Date(historyRes[0].created_at).getTime() / 1000
-                unixTime += 2 * 3600
-                returnData.data['expireTime'] = unixTime
-                returnData.data['createdAt'] = historyRes[0].created_at
+                let unixTimeC = new Date(historyRes[0].created_at).getTime() / 1000
+                let unixTimeE = unixTimeC + 2 * 3600
+                returnData.data['expireTime'] = unixTimeE
+                returnData.data['createdAt'] = unixTimeC
                 returnData.data['payAddress'] = historyRes[0].to_wallet
                 returnData.data['status'] = historyRes[0].status
                 returnData.data['prePay'] = historyRes[0].pre_pay

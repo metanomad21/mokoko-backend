@@ -175,6 +175,15 @@ const truncateDecimal = (num: any, precision: any) => {
   return Math.floor(num * factor) / factor;
 }
 
+const convertToUnixTimestamp = (mysqlTimestamp: any) => {
+  // 创建 Date 对象
+  const date = new Date(mysqlTimestamp);
+
+  // 获取毫秒时间戳，并转换为秒
+  const unixTimestamp = Math.floor(date.getTime() / 1000);
+
+  return unixTimestamp;
+}
 
 export {
   toBytes32,
@@ -195,5 +204,6 @@ export {
   computeMD5Hash,
   signDataSha256,
   truncateDecimal,
-  sortObjectAndStringify
+  sortObjectAndStringify,
+  convertToUnixTimestamp
 };
