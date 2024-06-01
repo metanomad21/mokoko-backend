@@ -384,13 +384,8 @@ const main = async () => {
             maxBodyLength: Infinity,
             url: 'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd'
         };
-        let priceRes// = await axios.request(config)
-
-        priceRes = {
-            "the-open-network": {
-                "usd": 7.42
-            }
-        }
+        let priceRes = await axios.request(config)
+        console.log("_getTONPrice ... ", priceRes)
         return priceRes
     }
 }
