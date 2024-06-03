@@ -19,7 +19,7 @@ const mysqlUtils = {
           password: password,
           database: database,
           port: port,
-          connectionLimit: 10,
+          connectionLimit: 80,
         });
 
         // 测试连接是否成功
