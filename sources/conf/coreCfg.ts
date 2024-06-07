@@ -38,5 +38,5 @@ export const PAGESIZE = 30
 
 export const HTTPPORT = 3243
 
-export const GAME_SERVER_HOST = 'https://majyo.vip:8443/'
+export const GAME_SERVER_HOST = 'https://prod.majyo.vip:8443/'
 export const TEST_GAME_SERVER_HOST = 'https://test.majyo.vip:8443/'
