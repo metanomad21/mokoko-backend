@@ -62,7 +62,7 @@ const main = async () => {
 
                     for(var t in reqData.transactions) {
                         //判定金额 用account_storage_balance_grams
-                        let msgVal = reqData.transactions[i].in_msg_value_grams
+                        let msgVal = reqData.transactions[t].in_msg_value_grams
                         let newStatus = 1
                         if(parseFloat(fromNano(msgVal).toString()) < (Math.floor(resCheckOrder[i].price_token * 100000) / 100000)) {
                             newStatus = 3
