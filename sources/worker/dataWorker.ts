@@ -25,6 +25,84 @@ const payWallet = IS_DEV == 1?PAY_ADDRESS_TEST:PAY_ADDRESS
 let currentTonPrice: any
 
 const main = async () => {
+
+    async function rectifyPay() {
+
+        try {
+            //查询最近订单的时间
+            //注意 id>500 是id523订单促使了此次修改，523之前的订单不理，以免重复发放钻石
+            let sqlCheckOrder = `select * from orders where status = 2 and is_rectify is null and id > 500 order by id desc limit 100`
+            let resCheckOrder: any = await db.query(sqlCheckOrder)
+            console.log("rectify Check order ... ", resCheckOrder)
+
+            if(resCheckOrder) {
+                //查询每一个未支付订单的链上数据
+                for(var i in resCheckOrder) {
+                    const query = gql`
+                    query {
+                        transactions(
+                            address_friendly: "${resCheckOrder[i]['to_wallet']}"
+                            in_msg_comment: "${resCheckOrder[i]['orderid']}"
+                        ){
+                        address
+                        gen_utime
+                        lt
+                        account_storage_balance_grams
+                        in_msg_op_code
+                        in_msg_comment
+                        out_msg_count
+                        out_msg_body
+                        end_status
+                        hash
+                        in_msg_value_grams
+                        }
+                    }
+                    `
+            
+                    let reqData: any = await request(DTON_ENDPOINT, query);
+                    console.log("rectify req data ... ", query, reqData)
+
+                    for(var t in reqData.transactions) {
+                        //判定金额 用account_storage_balance_grams
+                        let msgVal = reqData.transactions[t].in_msg_value_grams
+                        let newStatus = 1
+                        if(parseFloat(fromNano(msgVal).toString()) < (Math.floor(resCheckOrder[i].price_token * 100000) / 100000)) {
+                            newStatus = 3
+                        }
+
+                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.transactions[t].address.toString()), reqData.transactions[t].address)
+                        const genUtimeDate = new Date(reqData.transactions[t].gen_utime);
+                        const formattedDate = formatMySQLDateTime(genUtimeDate);
+
+                        //修改订单状态
+                        const sqlPayed = `
+                        UPDATE orders 
+                        SET status = '${newStatus}',
+                        payed_at = '${formattedDate}',
+                        payed_tx = '${reqData.transactions[t]['hash']}',
+                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}',
+                        msg_value = '${msgVal}'
+                        WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 2;
+                        `;
+                        // console.log("sqlPayed ... ", sqlPayed)
+                        await db.query(sqlPayed)
+                        await sendDataToBusinessServer()
+                    }
+
+                    //已复查
+                    let rectifySql = `UPDATE orders SET is_rectify = 1 WHERE orderid = '${resCheckOrder[i]['orderid']}';`
+                    await db.query(rectifySql)
+                }
+            }
+
+        } catch (error) {
+            console.error("Error rectify pay from dton", error);
+            return null;
+        }
+
+
+    }
+
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
         try {
             
@@ -158,6 +236,10 @@ const main = async () => {
         //1小时更新一次ton price
         await _getTONPrice()
         setInterval(_getTONPrice, 3600000)
+
+        //每隔20分钟进行一次已取消订单的二次确认
+        await rectifyPay()
+        setInterval(rectifyPay, 60000 * 20)
     }
 
     main()
@@ -262,7 +344,7 @@ const main = async () => {
             }
             res.send(returnData);
         } catch (error) {
-            console.log("/historyOrder error ...", error)
+            console.log("/getHistoryOrder error ...", error)
             res.send(returnData);
         }   
     });
@@ -285,7 +367,7 @@ const main = async () => {
             }
             res.send(returnData);
         } catch (error) {
-            console.log("/cancelOrder error ...", error)
+            console.log("/submitPayment error ...", error)
             res.send(returnData);
         }   
     });
@@ -301,7 +383,8 @@ const main = async () => {
             if(historyRes.length > 0) {
                 const sqlCancel = `
                     UPDATE orders 
-                    SET status = 2
+                    SET status = 2,
+                    cancel_time = NOW()
                     WHERE orderid = '${orderid}' AND status = 0 AND game_id = 1;`;
                 await db.query(sqlCancel)
                 returnData['errcode'] = 0
