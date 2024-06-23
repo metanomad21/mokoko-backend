@@ -173,7 +173,7 @@ const main = async () => {
             const sqlStatus = `
             UPDATE orders 
             SET status = 2 
-            WHERE created_at <= DATE_SUB(NOW(), INTERVAL 2 HOUR) AND status = 0;
+            WHERE created_at <= DATE_SUB(NOW(), INTERVAL 2 HOUR) AND status = 0 AND pre_pay != 1;
             `;
             console.log("update expire sqlStatus ... ", sqlStatus)
 
