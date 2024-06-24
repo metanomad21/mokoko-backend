@@ -120,6 +120,7 @@ const main = async () => {
                             address_friendly: "${resCheckOrder[i]['to_wallet']}"
                             in_msg_comment: "${resCheckOrder[i]['orderid']}"
                         ){
+                        in_msg_src_addr_address_hex
                         address
                         gen_utime
                         lt
@@ -156,7 +157,7 @@ const main = async () => {
                         SET status = '${newStatus}',
                         payed_at = '${formattedDate}',
                         payed_tx = '${reqData.transactions[t]['hash']}',
-                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}',
+                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].in_msg_src_addr_address_hex.toString())}',
                         msg_value = '${msgVal}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
