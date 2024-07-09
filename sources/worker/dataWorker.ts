@@ -306,7 +306,8 @@ const main = async () => {
                 let orderid = null
                 if(payToken == "STAR") {
                     orderid = `${gameId}-${prodId}-${computeMD5Hash(userId.toString()+Date.now())}`
-                    priceToken = dataProd.stars
+                    // priceToken = dataProd.stars
+                    priceToken = 1
                     let productTitle = `Gems ${dataProd.gems}`
                     const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
                     const prices = [
