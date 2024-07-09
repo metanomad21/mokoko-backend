@@ -321,7 +321,7 @@ const main = async () => {
                         prices: JSON.stringify(prices),
                     })
                     const response = await axios.post(API_URL, {
-                        title: 'Gems 1000',
+                        title: `Gems 1000 ` + priceToken,
                         description: 'Gems 1000',
                         payload: orderid, //orderid,
                         provider_token: '', // Leave empty for Telegram Stars
