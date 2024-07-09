@@ -276,7 +276,7 @@ const main = async () => {
                     payToken = PAY_TYPE[payType]
                 }
                 //检查该地址有下单未支付记录吗
-                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'TON'`
+                let checkUnpaySql = ``
                 if(payToken == 'STAR') {
                     //check user is exist?
                     const respoUser: any = await axios.post(`${gameServerHost}GetLastGems`, {
@@ -287,6 +287,8 @@ const main = async () => {
                     }else{
                         throw(3)
                     }
+                }else{
+                    checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'TON'`
                 }
                 let checkUnpayRes = await db.query(checkUnpaySql) 
                 if(checkUnpayRes.length > 0) {
@@ -301,10 +303,9 @@ const main = async () => {
                 let priceToken = truncateDecimal(priceUsd / priceTON, 9)
                 let payLink = null
                 const gameId = 1
-                const walletMd5 = computeMD5Hash(playerWallet+Date.now())
-                let orderid = `${gameId}-${prodId}-${walletMd5}`
+                let orderid = null
                 if(payToken == "STAR") {
-                    orderid = `${gameId}-${prodId}-${userId}`
+                    orderid = `${gameId}-${prodId}-${computeMD5Hash(userId+Date.now())}`
                     priceToken = dataProd.stars
                     let productTitle = `Gems ${dataProd.gems}`
                     const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
@@ -322,6 +323,8 @@ const main = async () => {
                     if(response.status == 200) {
                         payLink = response.data.result
                     }
+                }else{
+                    orderid = `${gameId}-${prodId}-${computeMD5Hash(playerWallet+Date.now())}`
                 }
                 let sqlInsert = `
                 INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price, pay_link)
