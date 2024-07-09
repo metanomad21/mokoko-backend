@@ -302,9 +302,26 @@ const main = async () => {
                 let payLink = null
                 const gameId = 1
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
-                const orderid = `${gameId}-${prodId}-${walletMd5}`
+                let orderid = `${gameId}-${prodId}-${walletMd5}`
                 if(payToken == "STAR") {
-                    
+                    orderid = `${gameId}-${prodId}-${userId}`
+                    priceToken = dataProd.stars
+                    let productTitle = `Gems ${dataProd.gems}`
+                    const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
+                    const prices = [
+                        { label: productTitle, amount: priceToken }, // 价格单位是最小货币单位，比如分
+                    ];
+                    const response = await axios.post(API_URL, {
+                        title: productTitle,
+                        description: productTitle,
+                        payload: orderid,
+                        provider_token: '', // Leave empty for Telegram Stars
+                        currency: 'XTR',
+                        prices: JSON.stringify(prices),
+                    });
+                    if(response.status == 200) {
+                        payLink = response.data.result
+                    }
                 }
                 let sqlInsert = `
                 INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price, pay_link)
