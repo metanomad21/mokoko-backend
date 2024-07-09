@@ -321,13 +321,14 @@ const main = async () => {
                         prices: JSON.stringify(prices),
                     })
                     const response = await axios.post(API_URL, {
-                        title: productTitle,
-                        description: productTitle,
-                        payload: orderid,
+                        title: "Gems 1000",// productTitle,
+                        description: "Gems 1000", //productTitle,
+                        payload: "1-10003-4a80d3c32889de5e4867b2dcb6285402", //orderid,
                         provider_token: '', // Leave empty for Telegram Stars
                         currency: 'XTR',
-                        prices: JSON.stringify(prices),
+                        prices: '[{"label":"Gems 1000","amount":250}]',
                     });
+                    
                     if(response.status == 200) {
                         payLink = response.data.result
                     }
