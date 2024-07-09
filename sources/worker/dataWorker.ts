@@ -312,6 +312,14 @@ const main = async () => {
                     const prices = [
                         { label: productTitle, amount: priceToken }, // 价格单位是最小货币单位，比如分
                     ];
+                    console.log("Before createInvoiceLink ... ", API_URL, {
+                        title: productTitle,
+                        description: productTitle,
+                        payload: orderid,
+                        provider_token: '', // Leave empty for Telegram Stars
+                        currency: 'XTR',
+                        prices: JSON.stringify(prices),
+                    })
                     const response = await axios.post(API_URL, {
                         title: productTitle,
                         description: productTitle,
