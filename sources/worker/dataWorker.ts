@@ -1,7 +1,7 @@
 import axios from 'axios'
 import express from 'express'
 import { request, gql } from 'graphql-request'
-import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST, PAY_ADDRESS_TEST} from '../conf/coreCfg'
+import {PAGESIZE, PAY_ADDRESS, DTON_ENDPOINT, HTTPPORT, GAME_SERVER_HOST, TEST_GAME_SERVER_HOST, PAY_ADDRESS_TEST, PAY_TYPE} from '../conf/coreCfg'
 import db from '../utils/mysql-utils'
 import {formatMySQLDateTime, computeMD5Hash, signDataSha256, truncateDecimal, sortObjectAndStringify, convertToUnixTimestamp} from '../utils/common'
 import { Address, Contract, Slice, beginCell, contractAddress, toNano, TonClient4, internal, fromNano, WalletContractV4 } from "@ton/ton";
@@ -18,6 +18,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
+const BOT_TOKEN = process.env.BOT_TOKEN
 const SHA256_PK = process.env.SHA256_PK
 const IS_DEV: Number = Number(process.env.IS_DEV) ?? 0
 const gameServerHost = IS_DEV == 1?TEST_GAME_SERVER_HOST:GAME_SERVER_HOST
@@ -40,7 +41,7 @@ const main = async () => {
                 for(var i in resCheckOrder) {
                     const query = gql`
                     query {
-                        transactions(
+                        raw_transactions(
                             address_friendly: "${resCheckOrder[i]['to_wallet']}"
                             in_msg_comment: "${resCheckOrder[i]['orderid']}"
                         ){
@@ -62,16 +63,16 @@ const main = async () => {
                     let reqData: any = await request(DTON_ENDPOINT, query);
                     console.log("rectify req data ... ", query, reqData)
 
-                    for(var t in reqData.transactions) {
+                    for(var t in reqData.raw_transactions) {
                         //判定金额 用account_storage_balance_grams
-                        let msgVal = reqData.transactions[t].in_msg_value_grams
+                        let msgVal = reqData.raw_transactions[t].in_msg_value_grams
                         let newStatus = 1
                         if(parseFloat(fromNano(msgVal).toString()) < (Math.floor(resCheckOrder[i].price_token * 100000) / 100000)) {
                             newStatus = 3
                         }
 
-                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.transactions[t].address.toString()), reqData.transactions[t].address)
-                        const genUtimeDate = new Date(reqData.transactions[t].gen_utime);
+                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.raw_transactions[t].address.toString()), reqData.raw_transactions[t].address)
+                        const genUtimeDate = new Date(reqData.raw_transactions[t].gen_utime);
                         const formattedDate = formatMySQLDateTime(genUtimeDate);
 
                         //修改订单状态
@@ -79,8 +80,8 @@ const main = async () => {
                         UPDATE orders 
                         SET status = '${newStatus}',
                         payed_at = '${formattedDate}',
-                        payed_tx = '${reqData.transactions[t]['hash']}',
-                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].address.toString())}',
+                        payed_tx = '${reqData.raw_transactions[t]['hash']}',
+                        from_wallet = '${Address.parseRaw("0:"+reqData.raw_transactions[t].address.toString())}',
                         msg_value = '${msgVal}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 2;
                         `;
@@ -99,8 +100,6 @@ const main = async () => {
             console.error("Error rectify pay from dton", error);
             return null;
         }
-
-
     }
 
     async function fetchPayData(page: any = 1, pageSize: any = PAGESIZE) {
@@ -116,7 +115,7 @@ const main = async () => {
                 for(var i in resCheckOrder) {
                     const query = gql`
                     query {
-                        transactions(
+                        raw_transactions(
                             address_friendly: "${resCheckOrder[i]['to_wallet']}"
                             in_msg_comment: "${resCheckOrder[i]['orderid']}"
                         ){
@@ -139,16 +138,16 @@ const main = async () => {
                     let reqData: any = await request(DTON_ENDPOINT, query);
                     console.log("req data ... ", query, reqData)
 
-                    for(var t in reqData.transactions) {
+                    for(var t in reqData.raw_transactions) {
                         //判定金额 用account_storage_balance_grams
-                        let msgVal = reqData.transactions[t].in_msg_value_grams
+                        let msgVal = reqData.raw_transactions[t].in_msg_value_grams
                         let newStatus = 1
                         if(parseFloat(fromNano(msgVal).toString()) < (Math.floor(resCheckOrder[i].price_token * 100000) / 100000)) {
                             newStatus = 3
                         }
 
-                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.transactions[t].address.toString()), reqData.transactions[t].address)
-                        const genUtimeDate = new Date(reqData.transactions[t].gen_utime);
+                        // console.log("from address ... ", Address.parseRaw("0:"+reqData.raw_transactions[t].address.toString()), reqData.raw_transactions[t].address)
+                        const genUtimeDate = new Date(reqData.raw_transactions[t].gen_utime);
                         const formattedDate = formatMySQLDateTime(genUtimeDate);
 
                         //修改订单状态
@@ -156,8 +155,8 @@ const main = async () => {
                         UPDATE orders 
                         SET status = '${newStatus}',
                         payed_at = '${formattedDate}',
-                        payed_tx = '${reqData.transactions[t]['hash']}',
-                        from_wallet = '${Address.parseRaw("0:"+reqData.transactions[t].in_msg_src_addr_address_hex.toString())}',
+                        payed_tx = '${reqData.raw_transactions[t]['hash']}',
+                        from_wallet = '${Address.parseRaw("0:"+reqData.raw_transactions[t].in_msg_src_addr_address_hex.toString())}',
                         msg_value = '${msgVal}'
                         WHERE orderid = '${resCheckOrder[i]['orderid']}' AND status = 0;
                         `;
@@ -193,12 +192,16 @@ const main = async () => {
             let orderSql= `select * from orders where status = 1 and sync_game_at is null`
             let orderRes = await db.query(orderSql)
             if(orderRes.length > 0) {
+                let payAmountFormat = orderRes[0]['price_token']
+                if(orderRes[0]['pay_token'] == 'TON') {
+                    payAmountFormat = toNano(truncateDecimal(orderRes[0]['price_token'], 9).toString()).toString()
+                }
                 let signData = {
                     address: orderRes[0]['player_wallet'],
                     prodId: orderRes[0]['item_id'],
                     txHash: orderRes[0]['payed_tx'],
                     orderId: orderRes[0]['orderid'],
-                    payAmount: toNano(truncateDecimal(orderRes[0]['price_token'], 9).toString()).toString(),
+                    payAmount: payAmountFormat,
                     payToken: orderRes[0]['pay_token']
                 }
                 let signedStr = signDataSha256(signData, SHA256_PK)
@@ -258,7 +261,7 @@ const main = async () => {
     // Endpoint to place an order for an item
     app.post('/order/:prodId', async (req: any, res: any) => {
         const { prodId } = req.params;
-        const { playerWallet } = req.body;
+        const { playerWallet, payType } = req.body;
         let returnData = {errcode: 1, data: {}}
         console.log(`Order received for item ${prodId}:`, req.body);
 
@@ -268,6 +271,10 @@ const main = async () => {
             })
             if(respoProdDetail.data.code == 0) {
 
+                let payToken = PAY_TYPE[0]
+                if(PAY_TYPE[payType] != undefined) {
+                    payToken = PAY_TYPE[payType]
+                }
                 //检查该地址有下单未支付记录吗
                 let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0`
                 let checkUnpayRes = await db.query(checkUnpaySql) 
@@ -280,13 +287,33 @@ const main = async () => {
                 const priceUsd = parseFloat(dataProd.price)/100
                 const priceTONRes: any = await _getTONPrice()
                 const priceTON = parseFloat(priceTONRes['the-open-network']['usd'])
-                const priceToken = truncateDecimal(priceUsd / priceTON, 9)
+                let priceToken = truncateDecimal(priceUsd / priceTON, 9)
+                let payLink = null
                 const gameId = 1
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
+                if(payToken == "STAR") {
+                    priceToken = dataProd.stars
+                    let productTitle = `Gems ${dataProd.gems}`
+                    const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
+                    const prices = [
+                        { label: productTitle, amount: priceToken }, // 价格单位是最小货币单位，比如分
+                    ];
+                    const response = await axios.post(API_URL, {
+                        title: productTitle,
+                        description: productTitle,
+                        payload: orderid,
+                        provider_token: '', // Leave empty for Telegram Stars
+                        currency: 'XTR',
+                        prices: JSON.stringify(prices),
+                    });
+                    if(response.status == 200) {
+                        payLink = response.data.result
+                    }
+                }
                 const sqlInsert = `
-                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price)
-                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', 'TON', 0, '${playerWallet}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}');
+                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price, pay_link)
+                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', '${payToken}', 0, '${playerWallet}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}', '${payLink}');
                 `;
                 console.log("inert sql /// ", sqlInsert)
                 await db.query(sqlInsert)
@@ -296,8 +323,10 @@ const main = async () => {
                     "priceToken": priceToken,
                     "gameId": gameId,
                     "prodId": prodId,
-                    "payToken": "TON",
-                    "payAddress": payWallet
+                    "payToken": payToken,
+                    "payType": payType,
+                    "payAddress": payWallet,
+                    "payLink": payLink
                 }
                 returnData['errcode'] = 0
             }
@@ -341,6 +370,8 @@ const main = async () => {
                 returnData.data['balance'] = historyRes[0].balance
                 returnData.data['prePay'] = historyRes[0].pre_pay
                 returnData.data['syncGameAt'] = historyRes[0].sync_game_at
+                returnData.data['payToken'] = historyRes[0].pay_token
+                returnData.data['payLink'] = historyRes[0].pay_link
                 returnData['errcode'] = 0
             }
             res.send(returnData);

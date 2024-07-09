@@ -40,3 +40,8 @@ export const HTTPPORT = 3243
 
 export const GAME_SERVER_HOST = 'https://prod.majyo.vip:8443/'
 export const TEST_GAME_SERVER_HOST = 'https://test.majyo.vip:8443/'
+
+export const PAY_TYPE = {
+  0: 'TON',
+  1: 'STAR'
+}
