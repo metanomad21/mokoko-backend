@@ -41,7 +41,12 @@ export const HTTPPORT = 3243
 export const GAME_SERVER_HOST = 'https://prod.majyo.vip:8443/'
 export const TEST_GAME_SERVER_HOST = 'https://test.majyo.vip:8443/'
 
-export const PAY_TYPE = {
+// 定义PAY_TYPE的类型
+interface PayType {
+  [key: string]: string;  // 或 [key: number]: string; 根据实际情况选择
+}
+
+export const PAY_TYPE: PayType = {
   0: 'TON',
   1: 'STAR'
 }
