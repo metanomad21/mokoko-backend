@@ -315,8 +315,8 @@ const main = async () => {
                     ];
                     console.log("Before createInvoiceLink ... ", API_URL, dataProd)
                     const response = await axios.post(API_URL, {
-                        title: productTitle,
-                        description: productTitle,
+                        title: `Gems ${dataProd.gems}`,
+                        description: `Gems ${dataProd.gems}`,
                         payload: orderid, //orderid,
                         provider_token: '', // Leave empty for Telegram Stars
                         currency: 'XTR',
