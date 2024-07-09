@@ -322,11 +322,11 @@ const main = async () => {
                     })
                     const response = await axios.post(API_URL, {
                         title: 'Gems 1000',
-                        description: productTitle.toString(),
-                        payload: "1-10003-4a80d3c32889de5e4867b2dcb6285403", //orderid,
+                        description: 'Gems 1000',
+                        payload: orderid, //orderid,
                         provider_token: '', // Leave empty for Telegram Stars
                         currency: 'XTR',
-                        prices: '[{"label":"Gems 1000","amount":250}]',
+                        prices: JSON.stringify(prices)
                     });
                     
                     if(response.status == 200) {
