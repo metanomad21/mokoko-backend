@@ -261,7 +261,7 @@ const main = async () => {
     // Endpoint to place an order for an item
     app.post('/order/:prodId', async (req: any, res: any) => {
         const { prodId } = req.params;
-        const { playerWallet, payType } = req.body;
+        const { playerWallet, userId, payType } = req.body;
         let returnData = {errcode: 1, data: {}}
         console.log(`Order received for item ${prodId}:`, req.body);
 
@@ -276,7 +276,18 @@ const main = async () => {
                     payToken = PAY_TYPE[payType]
                 }
                 //检查该地址有下单未支付记录吗
-                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0`
+                let checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'TON'`
+                if(payToken == 'STAR') {
+                    //check user is exist?
+                    const respoUser: any = await axios.post(`${gameServerHost}GetLastGems`, {
+                        userId: userId
+                    })
+                    if(respoUser.data.code == 0 && parseInt(respoUser.data.data) >= 0) {
+                        checkUnpaySql = `select * from orders where game_user_id = '${userId}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'STAR'`
+                    }else{
+                        throw(3)
+                    }
+                }
                 let checkUnpayRes = await db.query(checkUnpaySql) 
                 if(checkUnpayRes.length > 0) {
                     returnData['errcode'] = 2
@@ -293,28 +304,19 @@ const main = async () => {
                 const walletMd5 = computeMD5Hash(playerWallet+Date.now())
                 const orderid = `${gameId}-${prodId}-${walletMd5}`
                 if(payToken == "STAR") {
-                    priceToken = dataProd.stars
-                    let productTitle = `Gems ${dataProd.gems}`
-                    const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`;
-                    const prices = [
-                        { label: productTitle, amount: priceToken }, // 价格单位是最小货币单位，比如分
-                    ];
-                    const response = await axios.post(API_URL, {
-                        title: productTitle,
-                        description: productTitle,
-                        payload: orderid,
-                        provider_token: '', // Leave empty for Telegram Stars
-                        currency: 'XTR',
-                        prices: JSON.stringify(prices),
-                    });
-                    if(response.status == 200) {
-                        payLink = response.data.result
-                    }
+                    
                 }
-                const sqlInsert = `
+                let sqlInsert = `
                 INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price, pay_link)
                 VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', '${payToken}', 0, '${playerWallet}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}', '${payLink}');
                 `;
+                if(payToken == 'STAR') {
+                    sqlInsert = `
+                    INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, game_user_id, to_wallet, pre_pay, ton_price, pay_link)
+                    VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', '${payToken}', 0, '${userId}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}', '${payLink}');
+                    `;
+                }
+
                 console.log("inert sql /// ", sqlInsert)
                 await db.query(sqlInsert)
 
@@ -326,7 +328,8 @@ const main = async () => {
                     "payToken": payToken,
                     "payType": payType,
                     "payAddress": payWallet,
-                    "payLink": payLink
+                    "payLink": payLink,
+                    "userId": userId
                 }
                 returnData['errcode'] = 0
             }
