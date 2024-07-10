@@ -187,7 +187,7 @@ const main = async () => {
 
     // 将数据发送到游戏业务服务器
     async function sendDataToBusinessServer() {
-        return
+        // return
         try {
             console.log("enter sendDataToBusinessServer/// ")
             let orderSql= `select * from orders where status = 1 and sync_game_at is null`
