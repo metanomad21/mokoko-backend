@@ -187,6 +187,7 @@ const main = async () => {
 
     // 将数据发送到游戏业务服务器
     async function sendDataToBusinessServer() {
+        return
         try {
             console.log("enter sendDataToBusinessServer/// ")
             let orderSql= `select * from orders where status = 1 and sync_game_at is null`
@@ -299,8 +300,7 @@ const main = async () => {
                 const dataProd = respoProdDetail.data.data
                 const priceUsd = parseFloat(dataProd.price)/100
                 const priceTONRes: any = await _getTONPrice()
-                const priceTON = parseFloat(priceTONRes['the-open-network']['usd'])
-                let priceToken = truncateDecimal(priceUsd / priceTON, 9)
+                let priceToken = null
                 let payLink = null
                 const gameId = 1
                 let orderid = null
@@ -327,6 +327,8 @@ const main = async () => {
                         payLink = response.data.result
                     }
                 }else{
+                    const priceTON = parseFloat(priceTONRes['the-open-network']['usd'])
+                    priceToken = truncateDecimal(priceUsd / priceTON, 9)
                     orderid = `${gameId}-${prodId}-${computeMD5Hash(playerWallet+Date.now())}`
                 }
                 let sqlInsert = `
