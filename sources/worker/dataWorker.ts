@@ -32,7 +32,7 @@ const main = async () => {
         try {
             //查询最近订单的时间
             //注意 id>500 是id523订单促使了此次修改，523之前的订单不理，以免重复发放钻石
-            let sqlCheckOrder = `select * from orders where status = 2 and is_rectify is null and id > 500 order by id desc limit 100`
+            let sqlCheckOrder = `select * from orders where status = 2 and is_rectify is null and id > 500 and pay_token = 'TON' order by id desc limit 100`
             let resCheckOrder: any = await db.query(sqlCheckOrder)
             console.log("rectify Check order ... ", resCheckOrder)
 
@@ -106,7 +106,7 @@ const main = async () => {
         try {
             
             //查询最近订单的时间
-            let sqlCheckOrder = `select * from orders where status = 0 order by id desc`
+            let sqlCheckOrder = `select * from orders where status = 0 and pay_token = 'TON' order by id desc`
             let resCheckOrder: any = await db.query(sqlCheckOrder)
             console.log("Check order ... ", resCheckOrder)
 
