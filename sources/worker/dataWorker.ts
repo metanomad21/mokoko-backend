@@ -403,6 +403,9 @@ const main = async () => {
                 })
                 if(respoProdDetail.data.code == 0) {
                     returnData.data['gems'] = respoProdDetail.data.data.gems
+                    returnData.data['times'] = respoProdDetail.data.data.times
+                    returnData.data['imgId'] = respoProdDetail.data.data.imgId
+                    returnData.data['double'] = respoProdDetail.data.data.double
                 }
 
                 returnData.data['priceUsd'] = historyRes[0].price_usd
