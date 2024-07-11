@@ -288,12 +288,12 @@ const main = async () => {
                         userId: userId
                     })
                     if(respoUser.data.code == 0 && parseInt(respoUser.data.data) >= 0) {
-                        checkUnpaySql = `select * from orders where game_user_id = '${userId}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'STAR'`
+                        checkUnpaySql = `select * from orders where game_user_id = '${userId}' and status = 0 and game_id = 1 and pre_pay = 0`
                     }else{
                         throw(3)
                     }
                 }else{
-                    checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0 and pay_token = 'TON'`
+                    checkUnpaySql = `select * from orders where player_wallet = '${playerWallet}' and status = 0 and game_id = 1 and pre_pay = 0`
                 }
                 let checkUnpayRes = await db.query(checkUnpaySql) 
                 if(checkUnpayRes.length > 0) {
@@ -342,8 +342,8 @@ const main = async () => {
                     orderid = `${gameId}-${prodId}-${computeMD5Hash(playerWallet+Date.now())}`
                 }
                 let sqlInsert = `
-                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, to_wallet, pre_pay, ton_price, pay_link)
-                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', '${payToken}', 0, '${playerWallet}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}', '${payLink}');
+                INSERT INTO orders (orderid, game_id, item_id, price_usd, price_token, pay_token, status, player_wallet, game_user_id, to_wallet, pre_pay, ton_price, pay_link)
+                VALUES ('${orderid}', '${gameId}', '${prodId}', '${dataProd.price}', '${priceToken}', '${payToken}', 0, '${playerWallet}', '${userId}', '${payWallet}', 0, '${priceTONRes['the-open-network']['usd']}', '${payLink}');
                 `;
                 if(payToken == 'STAR') {
                     sqlInsert = `
