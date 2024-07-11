@@ -463,13 +463,19 @@ const main = async () => {
         let returnData: { errcode: number, data: any[] } = {errcode: 1, data: []}
 
         try {
-            if(userId != null && address != null) {
+            if(userId != null) {
                 //向服务器请求prod列表
                 const respoProdDetail: any = await axios.post(`${gameServerHost}GetProds`, {
                     userId: userId
                 })
                 if(respoProdDetail.data.code == 0) {
-                    let checkOrderSql = `select * from orders where player_wallet = '${address}' and pre_pay = 1 and status = 0`
+
+                    let checkOrderSql = null
+                    if(address != null) {
+                        checkOrderSql = `select * from orders where player_wallet = '${address}' and pre_pay = 1 and status = 0`
+                    }else{
+                        checkOrderSql = `select * from orders where game_user_id = '${userId}' and status = 0`
+                    }
                     let checkOrderRes = await db.query(checkOrderSql)
                     // console.log("checkOrderRes .. ", checkOrderSql, checkOrderRes)
                     for(var p in respoProdDetail.data.data) {
