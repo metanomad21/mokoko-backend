@@ -405,7 +405,7 @@ const main = async () => {
 
                 returnData.data['priceUsd'] = historyRes[0].price_usd
                 returnData.data['priceToken'] = historyRes[0].price_token
-                let unixTimeC = new Date(historyRes[0].created_at).getTime() / 1000
+                let unixTimeC = new Date(historyRes[0].created_at + 'Z').getTime() / 1000
                 let unixTimeE = unixTimeC + 2 * 3600
                 returnData.data['expireTime'] = unixTimeE
                 returnData.data['createdAt'] = unixTimeC
