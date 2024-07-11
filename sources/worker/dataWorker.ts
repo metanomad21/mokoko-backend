@@ -198,12 +198,16 @@ const main = async () => {
                     payAmountFormat = toNano(truncateDecimal(orderRes[0]['price_token'], 9).toString()).toString()
                 }
                 let signData = {
-                    address: orderRes[0]['player_wallet'],
                     prodId: orderRes[0]['item_id'],
                     txHash: orderRes[0]['payed_tx'],
                     orderId: orderRes[0]['orderid'],
                     payAmount: payAmountFormat,
                     payToken: orderRes[0]['pay_token']
+                }
+                if(orderRes[0]['player_wallet']){
+                    signData['address'] = orderRes[0]['player_wallet']
+                }else{
+                    signData['userId'] = orderRes[0]['game_user_id']
                 }
                 let signedStr = signDataSha256(signData, SHA256_PK)
                 const postData = {
