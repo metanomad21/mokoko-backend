@@ -314,18 +314,24 @@ const main = async () => {
                         { label: productTitle, amount: priceToken }, // 价格单位是最小货币单位，比如分
                     ];
                     console.log("Before createInvoiceLink ... ", API_URL, dataProd)
-                    const response = await axios.post(API_URL, {
-                        title: `Gems ${dataProd.gems}`,
-                        description: `Gems ${dataProd.gems}`,
-                        payload: orderid, //orderid,
-                        provider_token: '', // Leave empty for Telegram Stars
-                        currency: 'XTR',
-                        prices: JSON.stringify(prices)
-                    });
-                    
-                    if(response.status == 200) {
-                        payLink = response.data.result
+                    try {
+                        const response = await axios.post(API_URL, {
+                            title: `Gems ${dataProd.gems}`,
+                            description: `Gems ${dataProd.gems}`,
+                            payload: orderid, //orderid,
+                            provider_token: '', // Leave empty for Telegram Stars
+                            currency: 'XTR',
+                            prices: JSON.stringify(prices)
+                        });
+
+                        if(response.status == 200) {
+                            payLink = response.data.result
+                        }
+                    }catch(errP: any) {
+                        returnData['errcode'] = 3
+                        throw(3)
                     }
+                    
                 }else{
                     const priceTON = parseFloat(priceTONRes['the-open-network']['usd'])
                     priceToken = truncateDecimal(priceUsd / priceTON, 9)
