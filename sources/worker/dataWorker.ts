@@ -197,7 +197,7 @@ const main = async () => {
                 if(orderRes[0]['pay_token'] == 'TON') {
                     payAmountFormat = toNano(truncateDecimal(orderRes[0]['price_token'], 9).toString()).toString()
                 }
-                let signData = {
+                let signData: any = {
                     prodId: orderRes[0]['item_id'],
                     txHash: orderRes[0]['payed_tx'],
                     orderId: orderRes[0]['orderid'],
