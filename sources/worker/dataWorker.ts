@@ -367,12 +367,22 @@ const main = async () => {
     });
 
     // Endpoint to get order list for a specific address
-    app.get('/getHistoryOrder/:address', async (req, res) => {
-        const { address } = req.params;
+    app.get('/getHistoryOrder', async (req, res) => {
+        const userId = parseInt(req.query.userId as string) || null;
+        const address = req.query.address as string || null;
         let returnData: { errcode: number, data: { [key: string]: any } | null } = {errcode: 1, data: null}
 
         try {
-            let historySql = `select * from orders where player_wallet = '${address}' and game_id = 1 order by id desc`
+
+            let historySql = null
+            if(userId != null) {
+                historySql = `select * from orders where game_user_id = '${userId}' and game_id = 1 order by id desc`
+            }else if(address != null) {
+                historySql = `select * from orders where player_wallet = '${address}' and game_id = 1 order by id desc`
+            }else {
+                throw(101)
+            }
+
             console.log("historySql ... ", historySql)
             let historyRes = await db.query(historySql) 
 
@@ -400,6 +410,7 @@ const main = async () => {
                 returnData.data['syncGameAt'] = historyRes[0].sync_game_at
                 returnData.data['payToken'] = historyRes[0].pay_token
                 returnData.data['payLink'] = historyRes[0].pay_link
+                returnData.data['userId'] = historyRes[0].game_user_id
                 returnData['errcode'] = 0
             }
             res.send(returnData);
