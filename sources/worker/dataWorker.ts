@@ -381,9 +381,11 @@ const main = async () => {
         try {
 
             let historySql = null
-            if(userId != null) {
+            if(userId != null && address != null) {
+                historySql = `select * from orders where (game_user_id = '${userId}' or player_wallet = '${address}') and game_id = 1 order by id desc`
+            } else if(userId != null) {
                 historySql = `select * from orders where game_user_id = '${userId}' and game_id = 1 order by id desc`
-            }else if(address != null) {
+            } else if(address != null) {
                 historySql = `select * from orders where player_wallet = '${address}' and game_id = 1 order by id desc`
             }else {
                 throw(101)
